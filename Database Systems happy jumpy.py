@@ -63,6 +63,24 @@ def get_all_data():
         """)
         inventory_valuation = cursor.fetchall()
 
+        cursor.execute("""
+            SELECT Receipt.ReceiptID,
+                   Product.Name,
+                   Store.Location
+            FROM Receipt
+            JOIN Product ON Receipt.ProductID = Product.ProductID
+            JOIN Store ON Receipt.StoreID = Store.StoreID;
+        """)
+        sold_products_by_store = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT StoreID,
+                   COUNT(*) AS TotalSales
+            FROM Receipt
+            GROUP BY StoreID;
+        """)
+        sales_per_store = cursor.fetchall()
+
         return jsonify({
             "status": "success",
             "database_structure": {
@@ -78,6 +96,12 @@ def get_all_data():
             "custom_queries": {
                 "employee_assignments": employee_company_join,
                 "stock_valuation_happyjumpy": inventory_valuation
+            },
+            "custom_queries": {
+                "employee_assignments": employee_company_join,
+                "stock_valuation_happyjumpy": inventory_valuation,
+                "sold_products_by_store": sold_products_by_store,
+                "sales_per_store": sales_per_store
             }
         }), 200
 

@@ -24,6 +24,19 @@ SELECT
 FROM Store
 JOIN Product ON Store.ProductID = Product.ProductID
 WHERE Store.ProductID = 1;
+
+
+SELECT Receipt.ReceiptID,
+       Product.Name,
+       Store.Location
+FROM Receipt
+JOIN Product ON Receipt.ProductID = Product.ProductID
+JOIN Store ON Receipt.StoreID = Store.StoreID;
+
+
+SELECT StoreID, COUNT(*) AS TotalSales
+FROM Receipt
+GROUP BY StoreID;
     
 show tables;
 
