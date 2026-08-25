@@ -15,21 +15,13 @@ def get_db_connection():
         database=os.getenv('DB_NAME')
     )
 
-# def get_db_connection():
-#     return mysql.connector.connect(
-#         host="localhost",
-#         user="root",
-#         password="botato123",
-#         database="theproject"
-#     )
-
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Happy Jumpy database </title>
+    <title>Happy Jumpy database</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -82,6 +74,128 @@ HTML_TEMPLATE = """
 <body>
     <div class="container">
         <h1>Database Information</h1>
+
+        {% if receipt %}
+        <div class="section">
+            <h2>Receipts</h2>
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    {% for column in receipt[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in receipt %}
+                    <tr>
+                        {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if Company %}
+        <div class="section">
+            <h2>Company</h2>
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    {% for column in Company[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in Company %}
+                    <tr>
+                        {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if Department %}
+        <div class="section">
+            <h2>Department</h2>
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    {% for column in Department[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in Department %}
+                    <tr>
+                        {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if Employee %}
+        <div class="section">
+            <h2>Employee</h2>
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    {% for column in Employee[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in Employee %}
+                    <tr>
+                        {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if Region_Tax %}
+        <div class="section">
+            <h2>Region Tax</h2>
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    {% for column in Region_Tax[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in Region_Tax %}
+                    <tr>
+                        {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if Store %}
+        <div class="section">
+            <h2>Store</h2>
+            <table border="1" cellpadding="5" cellspacing="0">
+                <tr>
+                    {% for column in Store[0].keys() %}
+                        <th>{{ column }}</th>
+                    {% endfor %}
+                </tr>
+                {% for row in Store %}
+                    <tr>
+                        {% for value in row.values() %}
+                            <td>{{ value }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+
+        {% if Unique_Sell_Countries %}
         <div class="section">
             <h2>Unique Sell Countries</h2>
             <table border="1" cellpadding="5" cellspacing="0">
@@ -98,7 +212,10 @@ HTML_TEMPLATE = """
                     </tr>
                 {% endfor %}
             </table> 
-            </div>
+        </div>
+        {% endif %}
+
+        {% if All_managers %}
         <div class="section">
             <h2>All Managers</h2>
             <table border="1" cellpadding="5" cellspacing="0">
@@ -116,6 +233,9 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </table>
         </div>
+        {% endif %}
+
+        {% if The_calulations_tax_revenue %}
         <div class="section">
             <h2>The Calculations Tax Revenue</h2>
             <table border="1" cellpadding="5" cellspacing="0">
@@ -133,6 +253,9 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </table>
         </div>
+        {% endif %}
+
+        {% if tax_revenue %}
         <div class="section">
             <h2>Tax Revenue</h2>
             <table border="1" cellpadding="5" cellspacing="0">
@@ -150,6 +273,9 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </table>
         </div>
+        {% endif %}
+
+        {% if name_key %}
         <div class="section">
             <h2>Name Key</h2>
             <table border="1" cellpadding="5" cellspacing="0">
@@ -167,20 +293,12 @@ HTML_TEMPLATE = """
                 {% endfor %}
             </table>
         </div>
-    </div>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-    </style>
-    
-"""
+        {% endif %}
 
+    </div>
+</body>
+</html>
+"""
 @app.route('/')
 def index():
     try:
@@ -189,44 +307,58 @@ def index():
     except Exception as db_err:
         return render_template_string("""
             <div style="font-family:sans-serif; padding:40px; border:2px solid red; background:#fff5f5; border-radius:8px;">
-                <h2 style="color:red; margin-top:0;">can't connect to database</h2>            
-                <p>control assignment <strong>.env</strong>-file is correctly configured.</p>
+                <h2 style="color:red; margin-top:0;">Can't connect to database</h2>            
+                <p>Check that your <strong>.env</strong> file is correctly configured.</p>
                 <p><strong>Error message:</strong> {{ err }}</p>
             </div>
         """, err=str(db_err))
 
+    receipt = []
     Unique_Sell_Countries = []
     All_managers = []
     The_calulations_tax_revenue = []
     tax_revenue = []
     name_key = []
+    Company = []
+    Department = []
+    Employee = []
+    Region_Tax = []
+    Store = []
     sql_error = None
 
     try:
-        cursor.execute("""
-            SELECT * FROM Unique_Sell_Countries;
-        """)
+        cursor.execute("SELECT * FROM Receipt;")
+        receipt = cursor.fetchall()
+    
+        cursor.execute("SELECT DISTINCT CountryName FROM Region_Tax;")
         Unique_Sell_Countries = cursor.fetchall()
 
-        cursor.execute("""
-            SELECT * FROM All_managers;
-        """)
+        cursor.execute("SELECT * FROM Employee WHERE Is_Manager = 1;")
         All_managers = cursor.fetchall()
         
-        cursor.execute("""
-            SELECT * FROM The_calulations_tax_revenue;
-        """)
+        cursor.execute("SELECT * FROM The_calulations_tax_revenue;")
         The_calulations_tax_revenue = cursor.fetchall()
 
-        cursor.execute("""
-            SELECT * FROM tax_revenue;
-        """)
+        cursor.execute("SELECT * FROM tax_revenue;")
         tax_revenue = cursor.fetchall()
 
-        cursor.execute("""
-            SELECT * FROM name_key;
-        """)
+        cursor.execute("SELECT * FROM name_key;")
         name_key = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM Company;")
+        Company = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM Department;")
+        Department = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM Employee;")
+        Employee = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM Region_Tax;")
+        Region_Tax = cursor.fetchall()
+
+        cursor.execute("SELECT * FROM Store;")
+        Store = cursor.fetchall()
 
     except mysql.connector.Error as err:
         sql_error = str(err)
@@ -240,25 +372,21 @@ def index():
                 <h2 style="color:orange; margin-top:0;">SQL Error Occurred!</h2>
                 <p>One of your tables or columns in the database does not match the SQL code in the Python file.</p>
                 <p><strong>Error message from MySQL:</strong> {{ err }}</p>
-                <p><em>Tip: Check if your tables or column names are spelled exactly like this in your database.</em></p>
             </div>
         """, err=sql_error)
 
-    try:
-        # Försök ladda din HTML-sida
-        return render_template_string(HTML_TEMPLATE, Unique_Sell_Countries=Unique_Sell_Countries,
-                                tax_revenue=tax_revenue, name_key=name_key,
-                                All_managers=All_managers,
-                                The_calulations_tax_revenue=The_calulations_tax_revenue)
-    except Exception as template_err:
-
-        return render_template_string("""
-            <div style="font-family:sans-serif; padding:40px; border:2px solid blue; background:#f0f5ff; border-radius:8px;">
-                <h2 style="color:blue; margin-top:0;">html Not Found!</h2>
-                <p>Flask cannot find your HTML template. Make sure you have created a folder named exactly <strong>templates</strong> in the same directory as your Python file, and that <strong>index.html</strong> is inside it.</p>
-                <p><strong>Technical error:</strong> {{ err }}</p>
-            </div>
-        """, err=str(template_err))
+    return render_template_string(HTML_TEMPLATE, 
+                                  receipt=receipt,
+                                  Unique_Sell_Countries=Unique_Sell_Countries,
+                                  tax_revenue=tax_revenue, 
+                                  name_key=name_key,
+                                  All_managers=All_managers,
+                                  The_calulations_tax_revenue=The_calulations_tax_revenue,
+                                  Company=Company,
+                                  Department=Department,
+                                  Employee=Employee,
+                                  Region_Tax=Region_Tax,
+                                  Store=Store)
 
 if __name__ == '__main__':
     app.run(debug=True)

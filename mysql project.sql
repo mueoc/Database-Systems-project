@@ -2,7 +2,7 @@ USE theproject;
 
 DROP TRIGGER IF EXISTS BeforeReceiptInsert;
 DROP FUNCTION IF EXISTS CalculateTax;
-DROP FUNCTION IF EXISTS ConvertToSEK;
+DROP FUNCTION IF EXISTS ConvertToDifferentCurrency;
 
 DROP TABLE IF EXISTS Receipt;
 DROP TABLE IF EXISTS Game_Key;
@@ -40,8 +40,7 @@ CREATE TABLE IF NOT EXISTS Region_Tax (
     CountryCode VARCHAR(3) PRIMARY KEY, 
     CountryName VARCHAR(100) NOT NULL,
     Currency VARCHAR(3) NOT NULL,
-    TaxRate DECIMAL(4, 2) NOT NULL,
-    Price INT NOT NULL 
+    TaxRate DECIMAL(4, 2) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Store (
@@ -61,7 +60,8 @@ CREATE TABLE IF NOT EXISTS Customer (
 
 CREATE TABLE IF NOT EXISTS Product (
     Product_key_id INT PRIMARY KEY AUTO_INCREMENT NOT NULL, 
-    Name VARCHAR(50) NOT NULL
+    Name VARCHAR(50) NOT NULL,
+	Price INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS Game_Key (
@@ -77,11 +77,9 @@ CREATE TABLE IF NOT EXISTS Receipt (
     Tax_Paid DECIMAL(10,2) NOT NULL,
     TotalPrice DECIMAL(10,2) NOT NULL,
     Customer_id INT,
-    Product_key_id INT,
     Key_id INT UNIQUE,
     Store_id INT,
     FOREIGN KEY (Customer_id) REFERENCES Customer(Customer_id),
-    FOREIGN KEY (Product_key_id) REFERENCES Product(Product_key_id),
     FOREIGN KEY (Key_id) REFERENCES Game_Key(Key_id),
     FOREIGN KEY (Store_id) REFERENCES Store(Store_id)
 );
@@ -90,12 +88,12 @@ INSERT INTO Company (Company_Name, HQ_Location) VALUES ("HappyJumpy Studios", "G
 
 INSERT INTO Department (Occupations, Company_id) VALUES ("Economics", 1), ("Engineering", 1), ("Sales", 1);
 
-INSERT INTO Region_Tax (CountryCode, CountryName, Currency, TaxRate, Price) VALUES 
-('SE', 'Sweden', 'SEK', 0.25, 100),
-('NO', 'Norway', 'NOK', 0.25, 101),
-('DK', 'Denmark', 'DKK', 0.25, 67),
-('IS', 'Iceland', 'ISK', 0.24, 1290),
-('FI', 'Finland', 'EUR', 0.255, 9);
+INSERT INTO Region_Tax (CountryCode, CountryName, Currency, TaxRate) VALUES 
+('SE', 'Sweden', 'SEK', 0.25),
+('NO', 'Norway', 'NOK', 0.25),
+('DK', 'Denmark', 'DKK', 0.25),
+('IS', 'Iceland', 'ISK', 0.24),
+('FI', 'Finland', 'EUR', 0.255);
 
 INSERT INTO Store (City, CountryCode) VALUES 
 ("Stockholm", "SE"),
@@ -123,7 +121,7 @@ INSERT INTO Employee (Role, Location, Is_Manager, Department_id) VALUES
 ("Regional Manager", 'Helsinki', 1, 3),
 ("Cashier", 'Helsinki', 0, 3);
 
-INSERT INTO Product (Name) VALUES ('Happy Jumpy');
+INSERT INTO Product (Name, Price) VALUES ('Happy Jumpy', 100);
 
 INSERT INTO Customer (Username, Email, CountryCode) VALUES 
 ('starMan', 'star@se.com', 'SE'),
@@ -154,9 +152,13 @@ BEGIN
     FROM Customer 
     WHERE Customer_id = NEW.Customer_id;
 
-    SELECT TaxRate, Price INTO v_TaxRate, v_BasePrice 
+    SELECT TaxRate INTO v_TaxRate 
     FROM Region_Tax 
     WHERE CountryCode = v_CountryCode;
+
+	SELECT P.Price into v_BasePrice from Product p
+    JOIN Game_key gk on p.Product_key_id = gk.Product_key_id
+    WHERE gk.key_id = NEW.key_id;
 
     SET NEW.Tax_Paid = CalculateTax(v_BasePrice, v_TaxRate);
     
@@ -166,19 +168,19 @@ DELIMITER ;
 
 
 DELIMITER //
-CREATE FUNCTION ConvertToSEK(amount DECIMAL(10,2), currency_code VARCHAR(3))
+CREATE FUNCTION ConvertToDifferentCurrency(amount DECIMAL(10,2), currency_code VARCHAR(3))
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
     DECLARE v_ConvertedAmount DECIMAL(10,2);
 
-    CASE currency_code
-        WHEN 'EUR' THEN SET v_ConvertedAmount = amount * 11.03;
-        WHEN 'NOK' THEN SET v_ConvertedAmount = amount * 1.01;
-        WHEN 'ISK' THEN SET v_ConvertedAmount = amount * 0.077;
-        WHEN 'DKK' THEN SET v_ConvertedAmount = amount * 0.68;
-        WHEN 'SEK' THEN SET v_ConvertedAmount = amount; 
-        ELSE SET v_ConvertedAmount = amount; 
+CASE currency_code
+        WHEN 'EUR' THEN SET v_ConvertedAmount = amount / 11.03;
+        WHEN 'NOK' THEN SET v_ConvertedAmount = amount / 1.01;
+        WHEN 'DKK' THEN SET v_ConvertedAmount = amount / 1.51;
+        WHEN 'ISK' THEN SET v_ConvertedAmount = amount / 0.079;
+        WHEN 'SEK' THEN SET v_ConvertedAmount = amount;
+        ELSE SET v_ConvertedAmount = amount_sek;
     END CASE;
 
     RETURN v_ConvertedAmount;
@@ -189,9 +191,9 @@ INSERT INTO Game_Key (CD_Key, Product_key_id) VALUES ('HAPPY-JUMP-SWEDEN-KEY-202
 ('HAPPY-JUMP-FINLAND-KEY-2026', 1),('HAPPY-JUMP-ISLAND-KEY-2026', 1),
 ('HAPPY-JUMP-ISLAND-KEY-2026-2', 1);
 
-INSERT INTO Receipt (Customer_id, Product_key_id, Key_id, Store_id, Tax_Paid, TotalPrice) 
-VALUES (1, 1, 1, 1, 0.00, 0.00), (3, 1, 2, 5, 0.00, 0.00),(4, 1, 3, 4, 0.00, 0.00),
-(4, 1, 4, 4, 0.00, 0.00);
+INSERT INTO Receipt (Customer_id, Key_id, Store_id, Tax_Paid, TotalPrice) 
+VALUES (1, 1, 1, 0.00, 0.00), (3, 2, 5, 0.00, 0.00),(4, 3, 4, 0.00, 0.00),
+(4, 4, 4, 0.00, 0.00);
 SELECT * FROM Receipt;
 
 CREATE OR REPLACE VIEW Unique_Sell_Countries AS
@@ -219,23 +221,24 @@ SELECT * FROM All_managers;
 CREATE OR REPLACE VIEW The_calulations_tax_revenue AS
 SELECT
 	rt.CountryName AS Country,
-	r.Tax_Paid as tax,
-	ConvertToSEK(r.Tax_Paid, rt.Currency) AS Tax_To_SEK,
-    r.TotalPrice as price,
-    ConvertToSEK(r.TotalPrice, rt.Currency) AS Price_To_SEK
+	r.Tax_Paid as Tax_To_SEK,
+	ConvertToDifferentCurrency(r.Tax_Paid, rt.Currency) AS Tax,
+    r.TotalPrice as Price_To_SEK,
+    ConvertToDifferentCurrency(r.TotalPrice, rt.Currency) AS Price
 FROM Receipt r JOIN Customer c ON r.Customer_id = c.Customer_id
 JOIN Region_Tax rt ON c.CountryCode = rt.CountryCode;
 select * from The_calulations_tax_revenue;
 
 CREATE OR REPLACE VIEW tax_revenue AS
 SELECT 
-	COUNT(r.Receipt_id) AS Amount_sales,
-    SUM(ConvertToSEK(r.TotalPrice, rt.Currency)) AS Total_Global_Revenue_SEK,
-	SUM(ConvertToSEK(r.Tax_Paid, rt.Currency)) AS Total_Global_Tax_SEK
+    COUNT(r.Receipt_id) AS Total_Sales,
+    SUM(r.TotalPrice) AS Total_Revenue_SEK,
+    SUM(r.Tax_Paid) AS Total_Tax_SEK
 FROM Receipt r
 JOIN Customer c ON r.Customer_id = c.Customer_id
 JOIN Region_Tax rt ON c.CountryCode = rt.CountryCode;
-select * from tax_revenue;
+
+SELECT * FROM tax_revenue;
 
 CREATE OR REPLACE VIEW name_key AS
 SELECT 
